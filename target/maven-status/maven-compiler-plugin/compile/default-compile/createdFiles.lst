@@ -1,0 +1,7 @@
+com\usk\bank\repository\UserRepository.class
+com\usk\bank\controller\BankController.class
+com\usk\bank\repository\TransactionRepository.class
+com\usk\bank\service\BankService.class
+com\usk\bank\bankapplication.class
+com\usk\bank\entity\BankUser.class
+com\usk\bank\entity\Transaction.class
