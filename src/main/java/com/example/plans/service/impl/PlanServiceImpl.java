@@ -29,7 +29,7 @@ public class PlanServiceImpl implements PlanService {
 	
     @Override
     public PlanResponse createPlan(PlanRequest planRequest) {
-    	logger.warn("offer code cannot be null");
+    	logger.warn("plan cannot be null");
     	if (planRequest == null) throw new IllegalArgumentException("plan cannot be null");
 		if (!StringUtils.hasText(planRequest.getName()) || planRequest.getName().length() > 100) {
 			throw new IllegalArgumentException("Name is mandatory and must be at most 100 characters");
