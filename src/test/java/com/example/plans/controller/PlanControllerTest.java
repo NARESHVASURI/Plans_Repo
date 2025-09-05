@@ -1,87 +1,92 @@
 package com.example.plans.controller;
 
+import com.example.plans.dto.AppResponseDto;
 import com.example.plans.dto.PlanRequest;
+import com.example.plans.dto.PlanResponse;
 import com.example.plans.model.Plan;
 import com.example.plans.service.PlanService;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
-import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Page;
 
-import java.math.BigDecimal;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
-import static org.mockito.ArgumentMatchers.any;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.springframework.http.ResponseEntity;
+
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 class PlanControllerTest {
 
-    private MockMvc mockMvc;
+    @Mock
     private PlanService planService;
-    private ObjectMapper mapper = new ObjectMapper();
+
+    @InjectMocks
+    private PlanController planController;
 
     @BeforeEach
     void setUp() {
-        planService = Mockito.mock(PlanService.class);
-        PlanController controller = new PlanController(planService);
-        mockMvc = MockMvcBuilders.standaloneSetup(controller)
-                .setControllerAdvice(new com.example.plans.exception.GlobalExceptionHandler())
-                .build();
+        MockitoAnnotations.openMocks(this);
     }
 
     @Test
-    void createPlan_valid() throws Exception {
-        PlanRequest req = new PlanRequest();
-        req.setName("Basic");
-        req.setType("prepaid");
-        req.setData("1GB");
-        req.setAmount(BigDecimal.valueOf(99));
-        req.setValidity(28);
+    void testCreatePlan() {
+        PlanRequest request = new PlanRequest(); // populate as needed
+        PlanResponse response = new PlanResponse(); // populate as needed
 
-        Plan created = new Plan("id1","Basic","prepaid","1GB", BigDecimal.valueOf(99),28);
-        when(planService.createPlan(any(Plan.class))).thenReturn(created);
+        when(planService.createPlan(request)).thenReturn(response);
 
-        mockMvc.perform(post("/api/plans")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(mapper.writeValueAsString(req)))
-                .andExpect(status().isCreated())
-                .andExpect(header().exists("Location"));
+        ResponseEntity<AppResponseDto> result = planController.createPlan(request);
+
+        assertEquals(201, result.getStatusCodeValue());
+        assertEquals("Plan created successfully", result.getBody().getMessage());
+        verify(planService, times(1)).createPlan(request);
     }
 
     @Test
-    void createPlan_invalid_missingFields() throws Exception {
-        PlanRequest req = new PlanRequest(); // missing all
-        mockMvc.perform(post("/api/plans")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(mapper.writeValueAsString(req)))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.errors").isArray());
+    void testGetPlanById() {
+        String planId = "123";
+        Plan plan = new Plan(); // populate as needed
+
+        when(planService.getPlanById(planId)).thenReturn(Optional.of(plan));
+
+        ResponseEntity<AppResponseDto> result = planController.getPlanById(planId);
+
+        assertEquals(200, result.getStatusCodeValue());
+        assertEquals("Plan Name", result.getBody().getMessage());
+        assertTrue(result.getBody().getData() instanceof Optional);
+        verify(planService).getPlanById(planId);
     }
 
     @Test
-    void listPlans_pagination() throws Exception {
-        Plan p = new Plan("1","A","pre","1GB", BigDecimal.valueOf(10), 30);
-        Page<Plan> page = new PageImpl<>(List.of(p), PageRequest.of(0,10), 1);
-        when(planService.listPlans(any())).thenReturn(page);
+    void testGetPlansByData() {
+        String data = "test";
+        int pageNumber = 0;
+        int pageSize = 10;
+        List<Plan> plans = Arrays.asList(new Plan(), new Plan());
 
-        mockMvc.perform(get("/api/plans"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content").isArray());
+        when(planService.getPlansByData(data, pageNumber, pageSize)).thenReturn(plans);
+
+        List<Plan> result = planController.getPlansByData(data, pageNumber, pageSize);
+
+        assertEquals(2, result.size());
+        verify(planService).getPlansByData(data, pageNumber, pageSize);
     }
 
     @Test
-    void getPlan_notFound() throws Exception {
-        when(planService.getPlan("nope")).thenReturn(Optional.empty());
-        mockMvc.perform(get("/api/plans/nope"))
-                .andExpect(status().isNotFound());
+    void testGetAllPlans() {
+        List<Plan> plans = Arrays.asList(new Plan(), new Plan());
+
+        when(planService.getAllPlans()).thenReturn(plans);
+
+        ResponseEntity<List<Plan>> result = planController.getAllPlans();
+
+        assertEquals(200, result.getStatusCodeValue());
+        assertEquals(2, result.getBody().size());
+        verify(planService).getAllPlans();
     }
 }
